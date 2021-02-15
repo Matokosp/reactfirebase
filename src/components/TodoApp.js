@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./todoapp.css";
+import firebase from "firebase";
 import db from "../firebase";
 
   function useDidMount() {
@@ -22,7 +23,6 @@ function TodoApp() {
 useEffect(() => {
     async function fetchData(){
       let temp = []
-      // const response=db.collection('todos').doc('list');
       const data=await dbRef.get();
       //if the array with the list of tasks is empty,
       // the tasklist array will be empty
@@ -48,18 +48,23 @@ useEffect(() => {
     if (task !== "") {
       // every time we add a new task, the previous tasks
       // are added to the database as strings
-      const taskListToString =[]
-      tasklist.forEach((element)=>
-        taskListToString.push(JSON.stringify(element))
-      );
+
+      // const taskListToString =[]
+      // tasklist.forEach((element)=>
+      //   taskListToString.push(JSON.stringify(element))
+      // );
 
       const itemToaddId= "\"id\"" + ":\"" + Math.floor(Math.random() * 1000) +"\""
       const itemToAddValue= "\"value\"" + ":\"" + task +"\""
       const itemToAddCompleted = "\"isCompleted\"" + ":false"
       const itemToAdd= "{"+itemToaddId+","+itemToAddValue+","+itemToAddCompleted+"}"
 
-      const newTask = {todos: [...taskListToString, itemToAdd]}
-      await dbRef.set(newTask)
+      // const newTask = {todos: [...taskListToString, itemToAdd]}
+      // await dbRef.set(newTask)
+
+      dbRef.update({   
+              todos: firebase.firestore.FieldValue.arrayUnion(itemToAdd)
+      })
 
       // updating the tasks lists locally. We're not fetching
       // the db list again to update the app.
@@ -75,14 +80,21 @@ useEffect(() => {
 
     // send the new tasklist without the deleted task to the db
 
-    const taskListToString =[]
-    const filteredTaskList = tasklist.filter((t) => t.id != id)
-    filteredTaskList.forEach((element)=>
-      taskListToString.push(JSON.stringify(element))
-    );
+    // const taskListToString =[]
+    // const filteredTaskList = tasklist.filter((t) => t.id != id)
+    // filteredTaskList.forEach((element)=>
+    //   taskListToString.push(JSON.stringify(element))
+    // );
 
-    const newTaskList = {todos: [...taskListToString]}
-    await dbRef.set(newTaskList)
+    // const newTaskList = {todos: [...taskListToString]}
+    // await dbRef.set(newTaskList)
+
+    const taskEvent = tasklist.filter((t) => t.id === id)
+    console.log(taskEvent)
+
+    dbRef.update({   
+        todos: firebase.firestore.FieldValue.arrayRemove(JSON.stringify(taskEvent[0]))
+    })
     
   };
 
@@ -106,28 +118,14 @@ useEffect(() => {
     // after the change is made, the new lists with
     // the completed tasks is sent to the db asynchronously
     // with the set method
-
-    // const objectInArray = dbRef.data().findIndex(element.id);
-    const data=await dbRef.get();
-    const elementDb = data.data().todos
-
-    const elementInEvent = tasklist.findIndex((elem) => elem.id === id)
-
-    console.log(elementDb[elementInEvent])
-
-    // elementDb[elementInEvent].update({      
-    //     "isCompleted": "true"     
-    // })
-
-    // -----------------------------------------
       
-    // const taskListToString =[]
-    // newTaskList.forEach((element)=>
-    //   taskListToString.push(JSON.stringify(element))
-    // );
+    const taskListToString =[]
+    newTaskList.forEach((element)=>
+      taskListToString.push(JSON.stringify(element))
+    );
 
-    // const newTask = {todos: [...taskListToString]}
-    // await dbRef.set(newTask)
+    const newTask = {todos: [...taskListToString]}
+    await dbRef.set(newTask)
 
 
   };
